@@ -109,12 +109,15 @@ export default function App() {
 
   const addIncome = (entry) => update('income', (c) => ({ ...c, entries: [entry, ...c.entries] }));
   const deleteIncome = (id) => update('income', (c) => ({ ...c, entries: c.entries.filter((e) => e.id !== id) }));
+  const updateIncome = (id, patch) => update('income', (c) => ({ ...c, entries: c.entries.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));
 
   const addExpense = (entry) => update('expenses', (c) => ({ ...c, entries: [entry, ...c.entries] }));
   const deleteExpense = (id) => update('expenses', (c) => ({ ...c, entries: c.entries.filter((e) => e.id !== id) }));
+  const updateExpense = (id, patch) => update('expenses', (c) => ({ ...c, entries: c.entries.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));
 
   const addDonation = (entry) => update('donations', (c) => ({ ...c, entries: [entry, ...c.entries] }));
   const deleteDonation = (id) => update('donations', (c) => ({ ...c, entries: c.entries.filter((e) => e.id !== id) }));
+  const updateDonation = (id, patch) => update('donations', (c) => ({ ...c, entries: c.entries.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));
 
   const settleSplit = (expenseId, splitIdx) => {
     update('expenses', (c) => ({
@@ -243,6 +246,7 @@ export default function App() {
               donationRate={settings.donationRate}
               addEntry={addIncome}
               deleteEntry={deleteIncome}
+              updateEntry={updateIncome}
             />
           )}
           {view === 'expenses' && (
@@ -253,6 +257,7 @@ export default function App() {
               people={settings.people || []}
               addEntry={addExpense}
               deleteEntry={deleteExpense}
+              updateEntry={updateExpense}
               settleSplit={settleSplit}
               unsettleSplit={unsettleSplit}
               deleteSplit={deleteSplit}
@@ -274,6 +279,7 @@ export default function App() {
               donationRate={settings.donationRate}
               addEntry={addDonation}
               deleteEntry={deleteDonation}
+              updateEntry={updateDonation}
             />
           )}
           {view === 'budgets' && (

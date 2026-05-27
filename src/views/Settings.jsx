@@ -26,6 +26,26 @@ export default function Settings({ settings, updateSettings }) {
     updateSettings({ ...settings, people: (settings.people || []).filter((p) => p.id !== id) });
   };
 
+  const addCategory = (name) => {
+    const list = settings.expenseCategories || [];
+    if (list.some((c) => c.toLowerCase() === name.toLowerCase())) return;
+    updateSettings({ ...settings, expenseCategories: [...list, name] });
+  };
+
+  const deleteCategory = (name) => {
+    updateSettings({ ...settings, expenseCategories: (settings.expenseCategories || []).filter((c) => c !== name) });
+  };
+
+  const addIncomeSource = (name) => {
+    const list = settings.incomeSources || [];
+    if (list.some((s) => s.toLowerCase() === name.toLowerCase())) return;
+    updateSettings({ ...settings, incomeSources: [...list, name] });
+  };
+
+  const deleteIncomeSource = (name) => {
+    updateSettings({ ...settings, incomeSources: (settings.incomeSources || []).filter((s) => s !== name) });
+  };
+
   const addRecurring = (r) => {
     updateSettings({ ...settings, recurring: [...(settings.recurring || []), r] });
   };
@@ -67,6 +87,24 @@ export default function Settings({ settings, updateSettings }) {
       <CardSection cards={settings.cards || []} addCard={addCard} deleteCard={deleteCard} />
 
       <PeopleSection people={settings.people || []} addPerson={addPerson} deletePerson={deletePerson} />
+
+      <TagSection
+        title="EXPENSE CATEGORIES"
+        items={settings.expenseCategories || []}
+        addItem={addCategory}
+        deleteItem={deleteCategory}
+        placeholder="e.g., Pet Care"
+        helpText="Used in the Expenses log dropdown. Deleting one does not affect past expenses tagged with it."
+      />
+
+      <TagSection
+        title="INCOME SOURCES"
+        items={settings.incomeSources || []}
+        addItem={addIncomeSource}
+        deleteItem={deleteIncomeSource}
+        placeholder="e.g., Tutoring"
+        helpText="Used in the Income log dropdown."
+      />
 
       <RecurringSection
         recurring={settings.recurring || []}
@@ -149,6 +187,45 @@ function PeopleSection({ people, addPerson, deletePerson }) {
               <div className="text-zinc-100 text-sm truncate">{p.name}</div>
             </div>
             <button onClick={() => deletePerson(p.id)} className="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><Trash2 size={14} /></button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TagSection({ title, items, addItem, deleteItem, placeholder, helpText }) {
+  const [value, setValue] = useState('');
+
+  const submit = () => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    addItem(trimmed);
+    setValue('');
+  };
+
+  return (
+    <div>
+      <SectionHeader>{title}</SectionHeader>
+      {helpText && (
+        <div className="bg-zinc-900/30 border border-zinc-800 rounded p-3 mb-3 text-xs text-zinc-500">
+          {helpText}
+        </div>
+      )}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded p-4 mb-3">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+          <input value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} placeholder={placeholder} className="md:col-span-11 bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700" />
+          <button onClick={submit} className="md:col-span-1 bg-zinc-100 text-zinc-900 rounded px-3 py-2 text-sm font-medium hover:bg-white flex items-center justify-center"><Plus size={16} /></button>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {items.length === 0 && <EmptyState>none yet</EmptyState>}
+        {items.map((item) => (
+          <div key={item} className="flex items-center gap-1.5 bg-zinc-900/50 border border-zinc-800 rounded-md pl-3 pr-1 py-1 text-xs group">
+            <span className="text-zinc-200">{item}</span>
+            <button onClick={() => deleteItem(item)} className="text-zinc-600 hover:text-red-400 p-0.5 opacity-50 group-hover:opacity-100 transition">
+              <Trash2 size={11} />
+            </button>
           </div>
         ))}
       </div>

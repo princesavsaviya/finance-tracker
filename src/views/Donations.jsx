@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, Heart } from 'lucide-react';
+import { Plus, Trash2, Pencil, Heart } from 'lucide-react';
 import { StatCard, SectionHeader, ProgressBar, EmptyState } from '../components/Shared.jsx';
+import { Modal, Field, ModalActions } from './Income.jsx';
 import { fmtMoney, todayStr, isInMonth, isInYear, uid } from '../constants.js';
 
-export default function Donations({ entries, income, donationRate, addEntry, deleteEntry }) {
+export default function Donations({ entries, income, donationRate, addEntry, deleteEntry, updateEntry }) {
   const [date, setDate] = useState(todayStr());
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [editingId, setEditingId] = useState(null);
 
   const submit = () => {
     const amt = parseFloat(amount);
@@ -23,17 +25,24 @@ export default function Donations({ entries, income, donationRate, addEntry, del
   };
 
   const now = new Date();
-  const yearIncome = useMemo(() => income.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0), [income]);
-  const monthIncome = useMemo(() => income.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + e.amount, 0), [income]);
+  const yearPledgeableIncome = useMemo(() =>
+    income.filter((e) => isInYear(e.date, now) && e.applyDonation !== false).reduce((s, e) => s + e.amount, 0),
+    [income]
+  );
+  const monthPledgeableIncome = useMemo(() =>
+    income.filter((e) => isInMonth(e.date, now) && e.applyDonation !== false).reduce((s, e) => s + e.amount, 0),
+    [income]
+  );
   const yearDonated = useMemo(() => entries.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0), [entries]);
   const monthDonated = useMemo(() => entries.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + e.amount, 0), [entries]);
 
-  const pledgedYTD = yearIncome * donationRate;
-  const pledgedMTD = monthIncome * donationRate;
+  const pledgedYTD = yearPledgeableIncome * donationRate;
+  const pledgedMTD = monthPledgeableIncome * donationRate;
   const outstanding = Math.max(0, pledgedYTD - yearDonated);
   const fulfillPct = pledgedYTD > 0 ? (yearDonated / pledgedYTD) * 100 : 0;
 
   const sorted = useMemo(() => [...entries].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [entries]);
+  const editing = editingId ? entries.find((e) => e.id === editingId) : null;
 
   return (
     <div className="space-y-6">
@@ -54,7 +63,7 @@ export default function Donations({ entries, income, donationRate, addEntry, del
         </div>
         <ProgressBar pct={fulfillPct} color={fulfillPct >= 100 ? 'bg-emerald-500' : fulfillPct >= 50 ? 'bg-amber-500' : 'bg-rose-500'} />
         <div className="mt-3 text-xs text-zinc-500">
-          Rate: <span className="font-mono text-zinc-300">{(donationRate * 100).toFixed(1)}%</span> of income. Change in Settings.
+          Rate: <span className="font-mono text-zinc-300">{(donationRate * 100).toFixed(1)}%</span> of pledgeable income. Change in Settings.
         </div>
       </div>
 
@@ -81,11 +90,47 @@ export default function Donations({ entries, income, donationRate, addEntry, del
                 {e.note && <div className="text-zinc-500 text-xs truncate">{e.note}</div>}
               </div>
               <div className="font-mono text-violet-400 text-sm tabular-nums">{fmtMoney(e.amount)}</div>
-              <button onClick={() => deleteEntry(e.id)} className="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><Trash2 size={14} /></button>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                <button onClick={() => setEditingId(e.id)} className="text-zinc-500 hover:text-zinc-100 p-1" title="Edit"><Pencil size={13} /></button>
+                <button onClick={() => deleteEntry(e.id)} className="text-zinc-700 hover:text-red-400 p-1" title="Delete"><Trash2 size={14} /></button>
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {editing && (
+        <EditDonationModal
+          entry={editing}
+          onSave={(patch) => { updateEntry(editing.id, patch); setEditingId(null); }}
+          onClose={() => setEditingId(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function EditDonationModal({ entry, onSave, onClose }) {
+  const [date, setDate] = useState(entry.date);
+  const [recipient, setRecipient] = useState(entry.recipient);
+  const [amount, setAmount] = useState(String(entry.amount));
+  const [note, setNote] = useState(entry.note || '');
+
+  const save = () => {
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0 || !recipient.trim()) return;
+    onSave({ date, recipient: recipient.trim(), amount: amt, note: note.trim() });
+  };
+
+  return (
+    <Modal title="Edit Donation" onClose={onClose}>
+      <div className="space-y-3">
+        <Field label="DATE"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700 font-mono" /></Field>
+        <Field label="RECIPIENT"><input value={recipient} onChange={(e) => setRecipient(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700" /></Field>
+        <Field label="AMOUNT"><input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700 font-mono" /></Field>
+        <Field label="NOTE"><input value={note} onChange={(e) => setNote(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700" /></Field>
+      </div>
+      <ModalActions onClose={onClose} onSave={save} />
+    </Modal>
   );
 }

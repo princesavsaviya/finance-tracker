@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, Users, X, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Plus, Trash2, Users, X, ChevronDown, ChevronUp, Check, Pencil } from 'lucide-react';
 import { StatCard, SectionHeader, EmptyState } from '../components/Shared.jsx';
+import { Modal, Field, ModalActions } from './Income.jsx';
 import { fmtMoney, todayStr, isInMonth, paymentMethodLabel, uid } from '../constants.js';
 
-export default function Expenses({ entries, categories, cards, people, addEntry, deleteEntry, settleSplit, unsettleSplit, deleteSplit }) {
+export default function Expenses({ entries, categories, cards, people, addEntry, deleteEntry, updateEntry, settleSplit, unsettleSplit, deleteSplit }) {
   const [date, setDate] = useState(todayStr());
   const [category, setCategory] = useState(categories[0] || '');
   const [amount, setAmount] = useState('');
@@ -13,6 +14,7 @@ export default function Expenses({ entries, categories, cards, people, addEntry,
   const [splits, setSplits] = useState([]);
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterPayment, setFilterPayment] = useState('all');
+  const [editingId, setEditingId] = useState(null);
 
   const submit = () => {
     const amt = parseFloat(amount);
@@ -203,7 +205,10 @@ export default function Expenses({ entries, categories, cards, people, addEntry,
                       <div className="font-mono text-amber-400 text-[10px] tabular-nums">owed back {fmtMoney(unsettledTotal)}</div>
                     )}
                   </div>
-                  <button onClick={() => deleteEntry(e.id)} className="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><Trash2 size={14} /></button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <button onClick={() => setEditingId(e.id)} className="text-zinc-500 hover:text-zinc-100 p-1" title="Edit"><Pencil size={13} /></button>
+                    <button onClick={() => deleteEntry(e.id)} className="text-zinc-700 hover:text-red-400 p-1" title="Delete"><Trash2 size={14} /></button>
+                  </div>
                 </div>
                 {hasSplits && (
                   <div className="border-t border-zinc-800 px-3 py-2 space-y-1">
@@ -244,6 +249,67 @@ export default function Expenses({ entries, categories, cards, people, addEntry,
           })}
         </div>
       </div>
+
+      {editingId && (() => {
+        const e = entries.find((x) => x.id === editingId);
+        if (!e) return null;
+        return (
+          <EditExpenseModal
+            entry={e}
+            categories={categories}
+            cards={cards}
+            onSave={(patch) => { updateEntry(editingId, patch); setEditingId(null); }}
+            onClose={() => setEditingId(null)}
+          />
+        );
+      })()}
     </div>
+  );
+}
+
+function EditExpenseModal({ entry, categories, cards, onSave, onClose }) {
+  const [date, setDate] = useState(entry.date);
+  const [category, setCategory] = useState(entry.category);
+  const [amount, setAmount] = useState(String(entry.amount));
+  const [paymentMethod, setPaymentMethod] = useState(entry.paymentMethod || 'cash');
+  const [note, setNote] = useState(entry.note || '');
+
+  const paymentOptions = [
+    { value: 'cash', label: 'Cash' },
+    ...cards.map((c) => ({ value: `card-${c.id}`, label: `${c.name}${c.last4 ? ` ****${c.last4}` : ''}` })),
+  ];
+
+  const save = () => {
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) return;
+    onSave({ date, category, amount: amt, paymentMethod, note: note.trim() });
+  };
+
+  const allCategories = categories.includes(category) ? categories : [category, ...categories];
+
+  return (
+    <Modal title="Edit Expense" onClose={onClose}>
+      <div className="space-y-3">
+        <Field label="DATE"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700 font-mono" /></Field>
+        <Field label="CATEGORY">
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700">
+            {allCategories.map((c) => <option key={c}>{c}</option>)}
+          </select>
+        </Field>
+        <Field label="AMOUNT"><input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700 font-mono" /></Field>
+        <Field label="PAYMENT">
+          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700">
+            {paymentOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </Field>
+        <Field label="NOTE"><input value={note} onChange={(e) => setNote(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700" /></Field>
+        {(entry.splits || []).length > 0 && (
+          <div className="text-xs text-zinc-500 bg-zinc-950/50 border border-zinc-800 rounded p-2">
+            This expense has {(entry.splits || []).length} split(s). Manage them from the Expenses list or Owed tab.
+          </div>
+        )}
+      </div>
+      <ModalActions onClose={onClose} onSave={save} />
+    </Modal>
   );
 }

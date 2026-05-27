@@ -20,12 +20,20 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
     data.income.content.entries.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0),
     [data.income.content.entries]
   );
+  const yearPledgeableIncome = useMemo(() =>
+    data.income.content.entries.filter((e) => isInYear(e.date, now) && e.applyDonation !== false).reduce((s, e) => s + e.amount, 0),
+    [data.income.content.entries]
+  );
+  const monthPledgeableIncome = useMemo(() =>
+    data.income.content.entries.filter((e) => isInMonth(e.date, now) && e.applyDonation !== false).reduce((s, e) => s + e.amount, 0),
+    [data.income.content.entries]
+  );
   const yearDonated = useMemo(() =>
     data.donations.content.entries.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0),
     [data.donations.content.entries]
   );
 
-  const pledgedYTD = yearIncome * (settings.donationRate || 0.25);
+  const pledgedYTD = yearPledgeableIncome * (settings.donationRate || 0.25);
   const outstanding = pledgedYTD - yearDonated;
   const fulfillmentPct = pledgedYTD > 0 ? (yearDonated / pledgedYTD) * 100 : 0;
 
@@ -92,7 +100,7 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
           <StatCard label="INCOME" value={fmtMoney(monthIncome)} accent="text-emerald-400" />
           <StatCard label="EXPENSES" value={fmtMoney(monthExpenses)} accent="text-rose-400" />
           <StatCard label="NET" value={fmtMoney(monthNet, true)} accent={monthNet >= 0 ? 'text-cyan-400' : 'text-red-400'} />
-          <StatCard label="PLEDGE +" value={fmtMoney(monthIncome * (settings.donationRate || 0.25))} accent="text-violet-400" hint={`${((settings.donationRate || 0.25) * 100).toFixed(0)}% of income`} />
+          <StatCard label="PLEDGE +" value={fmtMoney(monthPledgeableIncome * (settings.donationRate || 0.25))} accent="text-violet-400" hint={`${((settings.donationRate || 0.25) * 100).toFixed(0)}% of pledgeable`} />
         </div>
       </div>
 
