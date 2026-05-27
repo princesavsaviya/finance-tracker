@@ -68,6 +68,14 @@ export function monthLabel(d = new Date()) {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+export function splitTotal(expense) {
+  return (expense.splits || []).reduce((s, sp) => s + sp.amount, 0);
+}
+
+export function netAmount(expense) {
+  return expense.amount - splitTotal(expense);
+}
+
 export function paymentMethodLabel(pm, cards) {
   if (!pm || pm === 'cash') return 'Cash';
   if (pm.startsWith('card-')) {

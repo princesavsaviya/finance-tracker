@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend
 } from 'recharts';
-import { isInMonth, isInYear, fmtMoney } from '../constants.js';
+import { isInMonth, isInYear, fmtMoney, netAmount } from '../constants.js';
 
 const COLORS = {
   income: '#10b981',
@@ -50,7 +50,7 @@ export function CashflowChart({ income, expenses, months = 6 }) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = monthKey(d);
       const inc = income.filter((e) => e.date.startsWith(key)).reduce((s, e) => s + e.amount, 0);
-      const exp = expenses.filter((e) => e.date.startsWith(key)).reduce((s, e) => s + e.amount, 0);
+      const exp = expenses.filter((e) => e.date.startsWith(key)).reduce((s, e) => s + netAmount(e), 0);
       series.push({ month: monthLabel(d), Income: inc, Expenses: exp });
     }
     return series;
@@ -75,7 +75,7 @@ export function CategoryDonut({ expenses }) {
   const data = useMemo(() => {
     const totals = {};
     expenses.filter((e) => isInMonth(e.date)).forEach((e) => {
-      totals[e.category] = (totals[e.category] || 0) + e.amount;
+      totals[e.category] = (totals[e.category] || 0) + netAmount(e);
     });
     return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
   }, [expenses]);

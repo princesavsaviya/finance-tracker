@@ -3,7 +3,7 @@ import { TrendingUp, TrendingDown, Heart, DollarSign, Bell, Plus, Users } from '
 import { StatCard, SectionHeader, ProgressBar, EmptyState } from '../components/Shared.jsx';
 import { CashflowChart, CategoryDonut, DonationProgressChart } from '../components/Charts.jsx';
 import {
-  fmtMoney, isInMonth, isInYear, monthLabel, paymentMethodLabel,
+  fmtMoney, isInMonth, isInYear, monthLabel, paymentMethodLabel, netAmount,
 } from '../constants.js';
 
 export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLogRecurring, onDismissRecurring }) {
@@ -13,7 +13,7 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
     [data.income.content.entries]
   );
   const monthExpenses = useMemo(() =>
-    data.expenses.content.entries.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + e.amount, 0),
+    data.expenses.content.entries.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + netAmount(e), 0),
     [data.expenses.content.entries]
   );
   const yearIncome = useMemo(() =>
@@ -61,7 +61,7 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
   const topCategoriesMTD = useMemo(() => {
     const totals = {};
     data.expenses.content.entries.filter((e) => isInMonth(e.date, now)).forEach((e) => {
-      totals[e.category] = (totals[e.category] || 0) + e.amount;
+      totals[e.category] = (totals[e.category] || 0) + netAmount(e);
     });
     return Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [data.expenses.content.entries]);

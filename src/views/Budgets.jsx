@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { SectionHeader, ProgressBar, EmptyState } from '../components/Shared.jsx';
-import { fmtMoney, isInMonth } from '../constants.js';
+import { fmtMoney, isInMonth, netAmount } from '../constants.js';
 
 export default function Budgets({ categories, budgets, expenses, updateBudget }) {
   const monthSpent = useMemo(() => {
     const totals = {};
     expenses.filter((e) => isInMonth(e.date)).forEach((e) => {
-      totals[e.category] = (totals[e.category] || 0) + e.amount;
+      totals[e.category] = (totals[e.category] || 0) + netAmount(e);
     });
     return totals;
   }, [expenses]);

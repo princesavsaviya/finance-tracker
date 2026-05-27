@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Trash2, Users, X, ChevronDown, ChevronUp, Check, Pencil } from 'lucide-react';
 import { StatCard, SectionHeader, EmptyState } from '../components/Shared.jsx';
 import { Modal, Field, ModalActions } from './Income.jsx';
-import { fmtMoney, todayStr, isInMonth, paymentMethodLabel, uid } from '../constants.js';
+import { fmtMoney, todayStr, isInMonth, paymentMethodLabel, uid, netAmount } from '../constants.js';
 
 export default function Expenses({ entries, categories, cards, people, addEntry, deleteEntry, updateEntry, settleSplit, unsettleSplit, deleteSplit }) {
   const [date, setDate] = useState(todayStr());
@@ -53,7 +53,7 @@ export default function Expenses({ entries, categories, cards, people, addEntry,
     setSplits(splits.map((s) => ({ ...s, amount: share })));
   };
 
-  const monthTotal = useMemo(() => entries.filter((e) => isInMonth(e.date)).reduce((s, e) => s + e.amount, 0), [entries]);
+  const monthTotal = useMemo(() => entries.filter((e) => isInMonth(e.date)).reduce((s, e) => s + netAmount(e), 0), [entries]);
   const monthCount = useMemo(() => entries.filter((e) => isInMonth(e.date)).length, [entries]);
 
   const filtered = useMemo(() => {
@@ -201,6 +201,9 @@ export default function Expenses({ entries, categories, cards, people, addEntry,
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className="font-mono text-rose-400 text-sm tabular-nums">-{fmtMoney(e.amount).replace('-', '')}</div>
+                    {hasSplits && (
+                      <div className="font-mono text-zinc-500 text-[10px] tabular-nums">net {fmtMoney(netAmount(e))}</div>
+                    )}
                     {unsettledTotal > 0 && (
                       <div className="font-mono text-amber-400 text-[10px] tabular-nums">owed back {fmtMoney(unsettledTotal)}</div>
                     )}
