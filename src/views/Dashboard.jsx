@@ -9,20 +9,20 @@ import {
 export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLogRecurring, onDismissRecurring }) {
   const now = new Date();
   const monthIncome = useMemo(() =>
-    data.income.entries.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + e.amount, 0),
-    [data.income.entries]
+    data.income.content.entries.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + e.amount, 0),
+    [data.income.content.entries]
   );
   const monthExpenses = useMemo(() =>
-    data.expenses.entries.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + e.amount, 0),
-    [data.expenses.entries]
+    data.expenses.content.entries.filter((e) => isInMonth(e.date, now)).reduce((s, e) => s + e.amount, 0),
+    [data.expenses.content.entries]
   );
   const yearIncome = useMemo(() =>
-    data.income.entries.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0),
-    [data.income.entries]
+    data.income.content.entries.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0),
+    [data.income.content.entries]
   );
   const yearDonated = useMemo(() =>
-    data.donations.entries.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0),
-    [data.donations.entries]
+    data.donations.content.entries.filter((e) => isInYear(e.date, now)).reduce((s, e) => s + e.amount, 0),
+    [data.donations.content.entries]
   );
 
   const pledgedYTD = yearIncome * (settings.donationRate || 0.25);
@@ -33,20 +33,20 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
 
   const recentTxns = useMemo(() => {
     const all = [
-      ...data.income.entries.map((e) => ({ ...e, type: 'income' })),
-      ...data.expenses.entries.map((e) => ({ ...e, type: 'expense' })),
-      ...data.donations.entries.map((e) => ({ ...e, type: 'donation' })),
+      ...data.income.content.entries.map((e) => ({ ...e, type: 'income' })),
+      ...data.expenses.content.entries.map((e) => ({ ...e, type: 'expense' })),
+      ...data.donations.content.entries.map((e) => ({ ...e, type: 'donation' })),
     ];
     return all.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 10);
   }, [data]);
 
   const topCategoriesMTD = useMemo(() => {
     const totals = {};
-    data.expenses.entries.filter((e) => isInMonth(e.date, now)).forEach((e) => {
+    data.expenses.content.entries.filter((e) => isInMonth(e.date, now)).forEach((e) => {
       totals[e.category] = (totals[e.category] || 0) + e.amount;
     });
     return Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [data.expenses.entries]);
+  }, [data.expenses.content.entries]);
 
   return (
     <div className="space-y-6">
@@ -110,19 +110,19 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-zinc-900/30 border border-zinc-800 rounded p-4">
           <SectionHeader>CASHFLOW (LAST 6 MONTHS)</SectionHeader>
-          <CashflowChart income={data.income.entries} expenses={data.expenses.entries} />
+          <CashflowChart income={data.income.content.entries} expenses={data.expenses.content.entries} />
         </div>
         <div className="bg-zinc-900/30 border border-zinc-800 rounded p-4">
           <SectionHeader>CATEGORIES THIS MONTH</SectionHeader>
-          <CategoryDonut expenses={data.expenses.entries} />
+          <CategoryDonut expenses={data.expenses.content.entries} />
         </div>
       </div>
 
       <div className="bg-zinc-900/30 border border-zinc-800 rounded p-4">
         <SectionHeader>DONATION PROGRESS YTD</SectionHeader>
         <DonationProgressChart
-          income={data.income.entries}
-          donations={data.donations.entries}
+          income={data.income.content.entries}
+          donations={data.donations.content.entries}
           rate={settings.donationRate || 0.25}
         />
       </div>
