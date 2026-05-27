@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, CreditCard, Repeat } from 'lucide-react';
+import { Plus, Trash2, CreditCard, Repeat, Users } from 'lucide-react';
 import { SectionHeader, EmptyState } from '../components/Shared.jsx';
 import { fmtMoney, uid, paymentMethodLabel } from '../constants.js';
 
@@ -16,6 +16,14 @@ export default function Settings({ settings, updateSettings }) {
 
   const deleteCard = (id) => {
     updateSettings({ ...settings, cards: settings.cards.filter((c) => c.id !== id) });
+  };
+
+  const addPerson = (person) => {
+    updateSettings({ ...settings, people: [...(settings.people || []), person] });
+  };
+
+  const deletePerson = (id) => {
+    updateSettings({ ...settings, people: (settings.people || []).filter((p) => p.id !== id) });
   };
 
   const addRecurring = (r) => {
@@ -57,6 +65,8 @@ export default function Settings({ settings, updateSettings }) {
       </div>
 
       <CardSection cards={settings.cards || []} addCard={addCard} deleteCard={deleteCard} />
+
+      <PeopleSection people={settings.people || []} addPerson={addPerson} deletePerson={deletePerson} />
 
       <RecurringSection
         recurring={settings.recurring || []}
@@ -100,6 +110,45 @@ function CardSection({ cards, addCard, deleteCard }) {
               {c.last4 && <div className="text-zinc-500 text-xs font-mono">****{c.last4}</div>}
             </div>
             <button onClick={() => deleteCard(c.id)} className="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><Trash2 size={14} /></button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PeopleSection({ people, addPerson, deletePerson }) {
+  const [name, setName] = useState('');
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (people.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) return;
+    addPerson({ id: `p${uid()}`, name: trimmed });
+    setName('');
+  };
+
+  return (
+    <div>
+      <SectionHeader>PEOPLE</SectionHeader>
+      <div className="bg-zinc-900/30 border border-zinc-800 rounded p-3 mb-3 text-xs text-zinc-500">
+        Add people you split expenses with. Names appear in the split picker on the Expenses tab.
+      </div>
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded p-4 mb-3">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+          <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} placeholder="Name (e.g., Shashwat)" className="md:col-span-11 bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-700" />
+          <button onClick={submit} className="md:col-span-1 bg-zinc-100 text-zinc-900 rounded px-3 py-2 text-sm font-medium hover:bg-white flex items-center justify-center"><Plus size={16} /></button>
+        </div>
+      </div>
+      <div className="space-y-1">
+        {people.length === 0 && <EmptyState>no people yet</EmptyState>}
+        {people.map((p) => (
+          <div key={p.id} className="flex items-center gap-3 px-3 py-2.5 bg-zinc-900/30 border border-zinc-800 rounded group">
+            <Users size={14} className="text-zinc-500" />
+            <div className="flex-1 min-w-0">
+              <div className="text-zinc-100 text-sm truncate">{p.name}</div>
+            </div>
+            <button onClick={() => deletePerson(p.id)} className="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><Trash2 size={14} /></button>
           </div>
         ))}
       </div>

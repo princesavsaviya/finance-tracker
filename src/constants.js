@@ -10,6 +10,7 @@ export const DEFAULT_INCOME_SOURCES = [
 export const DEFAULT_SETTINGS = {
   donationRate: 0.25,
   cards: [],
+  people: [],
   expenseCategories: DEFAULT_EXPENSE_CATEGORIES,
   incomeSources: DEFAULT_INCOME_SOURCES,
   budgets: {},

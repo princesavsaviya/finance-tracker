@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { TrendingUp, TrendingDown, Heart, DollarSign, Bell, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Heart, DollarSign, Bell, Plus, Users } from 'lucide-react';
 import { StatCard, SectionHeader, ProgressBar, EmptyState } from '../components/Shared.jsx';
 import { CashflowChart, CategoryDonut, DonationProgressChart } from '../components/Charts.jsx';
 import {
@@ -30,6 +30,16 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
   const fulfillmentPct = pledgedYTD > 0 ? (yearDonated / pledgedYTD) * 100 : 0;
 
   const monthNet = monthIncome - monthExpenses;
+
+  const owedToMe = useMemo(() => {
+    let total = 0;
+    data.expenses.content.entries.forEach((e) => {
+      (e.splits || []).forEach((s) => {
+        if (!s.settled) total += s.amount;
+      });
+    });
+    return total;
+  }, [data.expenses.content.entries]);
 
   const recentTxns = useMemo(() => {
     const all = [
@@ -85,6 +95,21 @@ export default function Dashboard({ data, settings, onJumpTo, recurringDue, onLo
           <StatCard label="PLEDGE +" value={fmtMoney(monthIncome * (settings.donationRate || 0.25))} accent="text-violet-400" hint={`${((settings.donationRate || 0.25) * 100).toFixed(0)}% of income`} />
         </div>
       </div>
+
+      {owedToMe > 0 && (
+        <button onClick={() => onJumpTo('owed')} className="w-full text-left bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/20 rounded p-4 transition-colors group">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center flex-shrink-0">
+              <Users size={18} />
+            </div>
+            <div className="flex-1">
+              <div className="text-xs tracking-[0.2em] text-amber-400 mb-0.5">OWED TO ME</div>
+              <div className="text-zinc-400 text-xs">tap to see who and how much</div>
+            </div>
+            <div className="font-mono text-amber-400 text-2xl tabular-nums">{fmtMoney(owedToMe)}</div>
+          </div>
+        </button>
+      )}
 
       <div className="bg-zinc-900/30 border border-zinc-800 rounded p-4">
         <div className="flex items-center gap-2 mb-4">

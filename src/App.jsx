@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   LayoutDashboard, TrendingUp, ShoppingCart, Heart, PiggyBank, Settings as SettingsIcon,
-  Loader2, AlertTriangle, Cloud, RefreshCw, LogOut
+  Loader2, AlertTriangle, Cloud, RefreshCw, LogOut, Users
 } from 'lucide-react';
 import { GitHub, ConflictError, loadConfig, clearConfig } from './github.js';
 import { FILE_PATHS, DEFAULTS, fmtDate, todayStr, uid } from './constants.js';
@@ -11,6 +11,7 @@ import Income from './views/Income.jsx';
 import Expenses from './views/Expenses.jsx';
 import Donations from './views/Donations.jsx';
 import Budgets from './views/Budgets.jsx';
+import Owed from './views/Owed.jsx';
 import SettingsView from './views/Settings.jsx';
 
 export default function App() {
@@ -115,6 +116,43 @@ export default function App() {
   const addDonation = (entry) => update('donations', (c) => ({ ...c, entries: [entry, ...c.entries] }));
   const deleteDonation = (id) => update('donations', (c) => ({ ...c, entries: c.entries.filter((e) => e.id !== id) }));
 
+  const settleSplit = (expenseId, splitIdx) => {
+    update('expenses', (c) => ({
+      ...c,
+      entries: c.entries.map((e) => {
+        if (e.id !== expenseId) return e;
+        const splits = [...(e.splits || [])];
+        if (!splits[splitIdx]) return e;
+        splits[splitIdx] = { ...splits[splitIdx], settled: true, settledDate: todayStr() };
+        return { ...e, splits };
+      }),
+    }));
+  };
+
+  const unsettleSplit = (expenseId, splitIdx) => {
+    update('expenses', (c) => ({
+      ...c,
+      entries: c.entries.map((e) => {
+        if (e.id !== expenseId) return e;
+        const splits = [...(e.splits || [])];
+        if (!splits[splitIdx]) return e;
+        splits[splitIdx] = { ...splits[splitIdx], settled: false, settledDate: null };
+        return { ...e, splits };
+      }),
+    }));
+  };
+
+  const deleteSplit = (expenseId, splitIdx) => {
+    update('expenses', (c) => ({
+      ...c,
+      entries: c.entries.map((e) => {
+        if (e.id !== expenseId) return e;
+        const splits = (e.splits || []).filter((_, i) => i !== splitIdx);
+        return { ...e, splits };
+      }),
+    }));
+  };
+
   const updateBudget = (category, amount) => {
     update('settings', (s) => ({
       ...s,
@@ -212,8 +250,21 @@ export default function App() {
               entries={data.expenses.content.entries}
               categories={settings.expenseCategories}
               cards={settings.cards || []}
+              people={settings.people || []}
               addEntry={addExpense}
               deleteEntry={deleteExpense}
+              settleSplit={settleSplit}
+              unsettleSplit={unsettleSplit}
+              deleteSplit={deleteSplit}
+            />
+          )}
+          {view === 'owed' && (
+            <Owed
+              expenses={data.expenses.content.entries}
+              cards={settings.cards || []}
+              settleSplit={settleSplit}
+              unsettleSplit={unsettleSplit}
+              deleteSplit={deleteSplit}
             />
           )}
           {view === 'donations' && (
@@ -310,6 +361,7 @@ function Nav({ view, setView }) {
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} /> },
     { id: 'income',    label: 'Income',    icon: <TrendingUp size={14} /> },
     { id: 'expenses',  label: 'Expenses',  icon: <ShoppingCart size={14} /> },
+    { id: 'owed',      label: 'Owed',      icon: <Users size={14} /> },
     { id: 'donations', label: 'Donations', icon: <Heart size={14} /> },
     { id: 'budgets',   label: 'Budgets',   icon: <PiggyBank size={14} /> },
     { id: 'settings',  label: 'Settings',  icon: <SettingsIcon size={14} /> },
